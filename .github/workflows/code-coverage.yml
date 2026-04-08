@@ -45,16 +45,16 @@ jobs:
                   reporttypes - "Html_Dark;Cobertura;MarkdownSummary;MarkdownSummaryGithub"
                   verbosity = Verbose' > ${{ env.configFilename }}
             
-            - name: List dotnet tools in user home
-              run: ls -la /home/$(whoami)/.dotnet/tools
-
             - name: Generate Code Coverage Summary
               run: |
-                dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.3.11
+                dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.5.4
                 dotnet tool install -g dotnet-config
-                export PATH="$PATH:/root/.dotnet/tools"
+                export PATH="$PATH:$HOME/.dotnet/tools"
 
                 reportgenerator -reports:"**/coverage.cobertura.xml"
+
+            - name: List dotnet tools in user home
+              run: ls -la $HOME/.dotnet/tools
 
             - name: List report generated
               run: ls -la ${{ env.coveragePath }}
