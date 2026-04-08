@@ -1,0 +1,104 @@
+name: Code Coverage
+
+on:
+    workflow_call:
+        inputs:
+            solution_path:
+                type: string
+            max_limit:
+                type: string
+                required: true
+            min_limit:
+                type: string
+                required: true
+
+env:
+    DOTNET_VERSION: '10.0.x'
+    buildConfiguration: Release
+    coveragePath: ./coverage
+    configFilename: .netconfig
+
+jobs:
+    code-coverage:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v5
+              with:
+                dotnet-version: ${{ env.DOTNET_VERSION }}
+            
+            - name: Restore NuGet package
+              run: dotnet restore ${{ inputs.solution_path }}
+
+            - name: Build
+              run: dotnet build ${{ inputs.solution_path }} --no-restore --configuration ${{ env.buildConfiguration }}
+
+            - name: Run Code Coverage
+              run: |
+                dotnet test ${{ inputs.solution_path }} --no-build --verbosity normal --collect:"XPlat Code Coverage" \
+                    --results-directory ${{ env.coveragePath }}
+
+            - name: Create .netconfig File
+              id: netconfig_name
+              run: |
+                echo '[ReportGenerator]
+                  targetdir = "${{ env.coveragePath }}"
+                  reporttypes - "Html_Dark;Cobertura;MarkdownSummary;MarkdownSummaryGithub"
+                  verbosity = Verbose' > ${{ env.configFilename }}
+            
+            - name: Whoami
+              run: whoami
+
+            - name: List dotnet tools in root home
+              run: ls -la /root/.dotnet/tools
+
+            - name: List dotnet tools in user home
+              run: ls -la /home/$(whoami)/.dotnet/tools
+
+            - name: Generate Code Coverage Summary
+              run: |
+                dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.3.11
+                dotnet tool install -g dotnet-config
+                export PATH="$PATH:/root/.dotnet/tools"
+
+                reportgenerator -reports:"**/coverage.cobertura.xml"
+
+            - name: List report generated
+              run: ls -la ${{ env.coveragePath }}
+
+            - name: Publish Drop Artifacts
+              uses: actions/upload-artifact@v7
+              with:
+                name: CoverageReport
+                path: ${{ env.coveragePath }}
+
+            - name: Write to Job Github Summary
+              run: cat ${{ env.coveragePath }}/SummaryGithub.md
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.9'
+
+            - name: Extract Coverage Names
+              env:
+                max_limit: ${{ inputs.max_limit }}
+                min_limit: ${{ inputs.min_limit }}
+              run: |
+                python -c "
+                    import re, os
+                    
+                    max_limit = int(os.getenv('max_limit'))
+                    min_limit = int(os.getenv('min_limit'))
+
+                    check_icon = "OK"
+                    dash_icon = "MMM"
+                    cross_icon = "NOPE"
+
+                    print(max_limit)
+                    print(min_limit)
+                "
