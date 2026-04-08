@@ -35,7 +35,7 @@ jobs:
             - name: Run Code Coverage
               run: |
                 dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" \
-                    --results-directory ${{ env.coveragePath }}
+                    --configuration ${{ env.buildConfiguration }} --results-directory ${{ env.coveragePath }}
 
             - name: Create .netconfig File
               id: netconfig_name
