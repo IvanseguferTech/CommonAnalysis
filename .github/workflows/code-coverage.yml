@@ -45,12 +45,6 @@ jobs:
                   reporttypes - "Html_Dark;Cobertura;MarkdownSummary;MarkdownSummaryGithub"
                   verbosity = Verbose' > ${{ env.configFilename }}
             
-            - name: Whoami
-              run: whoami
-
-            - name: List dotnet tools in root home
-              run: ls -la /root/.dotnet/tools
-
             - name: List dotnet tools in user home
               run: ls -la /home/$(whoami)/.dotnet/tools
 
