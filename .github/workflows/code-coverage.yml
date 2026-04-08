@@ -3,11 +3,8 @@ name: Code Coverage
 on:
     workflow_call:
         inputs:
-            max_limit:
-                type: string
-                required: true
-            min_limit:
-                type: string
+            coverage_threshold:
+                type: number
                 required: true
 
 env:
@@ -84,19 +81,16 @@ jobs:
 
             - name: Extract Coverage Names
               env:
-                max_limit: ${{ inputs.max_limit }}
-                min_limit: ${{ inputs.min_limit }}
+                coverage_threshold: ${{ inputs.coverage_threshold }}
               run: |
                 python -c "
                     import re, os
                     
-                    max_limit = int(os.getenv('max_limit'))
-                    min_limit = int(os.getenv('min_limit'))
+                    threshold = int(os.getenv('coverage_threshold'))
 
                     check_icon = "OK"
                     dash_icon = "MMM"
                     cross_icon = "NOPE"
 
-                    print(max_limit)
-                    print(min_limit)
+                    print(threshold)
                 "
