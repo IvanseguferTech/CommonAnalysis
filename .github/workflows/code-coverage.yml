@@ -3,8 +3,6 @@ name: Code Coverage
 on:
     workflow_call:
         inputs:
-            solution_path:
-                type: string
             max_limit:
                 type: string
                 required: true
@@ -32,14 +30,14 @@ jobs:
                 dotnet-version: ${{ env.DOTNET_VERSION }}
             
             - name: Restore NuGet package
-              run: dotnet restore ${{ inputs.solution_path }}
+              run: dotnet restore
 
             - name: Build
-              run: dotnet build ${{ inputs.solution_path }} --no-restore --configuration ${{ env.buildConfiguration }}
+              run: dotnet build --no-restore --configuration ${{ env.buildConfiguration }}
 
             - name: Run Code Coverage
               run: |
-                dotnet test ${{ inputs.solution_path }} --no-build --verbosity normal --collect:"XPlat Code Coverage" \
+                dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" \
                     --results-directory ${{ env.coveragePath }}
 
             - name: Create .netconfig File
