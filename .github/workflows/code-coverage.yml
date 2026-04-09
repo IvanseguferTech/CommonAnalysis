@@ -103,9 +103,9 @@ jobs:
                 else:
                     icon = cross_icon
 
-                new_line = f'{project}: {coverage_percentage}% | {icon}'
+                new_line = f'| {project} | {coverage_percentage}% | {icon} |'
 
-                output_lines.append(f'{new_line} |\\n')
+                output_lines.append(f'{new_line}\\n')
 
                 with open(output_file_path, 'w') as output_file:
                     output_file.writelines(output_lines)
