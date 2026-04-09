@@ -3,7 +3,10 @@ name: Code Coverage
 on:
     workflow_call:
         inputs:
-            coverage_threshold:
+            max_limit:
+                type: number
+                required: true
+            min_limit:
                 type: number
                 required: true
 
@@ -48,7 +51,7 @@ jobs:
             - name: Install dotnet tools
               run: |
                 dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.5.4
-                dotnet tool install -g dotnet-config
+                dotnet tool install -g dotnet-config --version 1.2.0
                 export PATH="$PATH:$HOME/.dotnet/tools"
 
             - name: Generate Code Coverage Summary
@@ -60,26 +63,80 @@ jobs:
                 name: CoverageReport
                 path: ${{ env.coveragePath }}
 
-            - name: Write to Job Github Summary
-              run: cat ${{ env.coveragePath }}/SummaryGithub.md
-
             - name: Set up Python
-              uses: actions/setup-python@v5
+              uses: actions/setup-python@v6
               with:
                 python-version: '3.9'
 
             - name: Extract Coverage Names
               env:
-                coverage_threshold: ${{ inputs.coverage_threshold }}
+                min_limit: ${{ inputs.min_limit }}
+                max_limit: ${{ inputs.max_limit }}
               run: |
                 python -c "
-                    import re, os
+                import re, os
                     
-                    threshold = int(os.getenv('coverage_threshold'))
+                min_limit = int(os.getenv('min_limit'))
+                max_limit = int(os.getenv('max_limit'))
 
-                    check_icon = "OK"
-                    dash_icon = "MMM"
-                    cross_icon = "NOPE"
+                check_icon = "✅"
+                dash_icon = "‒"
+                cross_icon = "❌"
+                output_lines = ['# Coverage Table\\n\\n', '| Name | Percentage | |\\n', '| --- | --- | --- |\\n']
 
-                    print(threshold)
+                file_path = '${{ env.coveragePath }}/SummaryGithub.md'
+                output_file_path = '${{ env.coveragePath }}/extraction.md'
+
+                with open(file_path, 'r') as file:
+                    content = file.read()
+
+                matches = re.findall(r'<details><summary>(.*?) - (\d+(?:\.\d+)?)%</summary>', content)
+
+                project = matches[0][0]
+                coverage_percentage = float(matches[0][1])
+                icon = ''
+
+                if coverage_percentage > max_limit:
+                    icon = check_icon
+                elif min_limit <= coverage_percentage <= max_limit:
+                    icon = dash_icon
+                else:
+                    icon = cross_icon
+
+                new_line = f'{project}: {coverage_percentage}% | {icon}'
+
+                output_lines.append(f'{new_line} |\\n')
+
+                with open(output_file_path, 'w') as output_file:
+                    output_file.writelines(output_lines)
                 "
+
+            - name: Write to Job Summary - Table
+              run: cat ${{ env.coveragePath }}/extraction.md >> $GITHUB_STEP_SUMMARY
+
+            - name: Write to Job Summary - Table
+              run: cat ${{ env.coveragePath }}/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+            - name: Check line-rate in Cobertura.xml
+              env:
+                max_limit: ${{ inputs.max_limit }}
+              run: |
+                python - <<EOF
+                import xml.etree.ElementTree as ET
+                import os
+
+                limit = int(os.getenv('max_limit'))
+
+                cobertura_path = '${{ env.coveragePath }}/Cobertura.xml'
+
+                tree = ET.parse(cobertura_path)
+                root = tree.getroot()
+
+                line_rate = round(float(root.attrib['line-rate']) * 100, 1)
+
+                if line_rate < limit:
+                    print(f'line-rate {line_rate} is below the limit of {limit}.')
+                    exit(1)
+                else:
+                    print(f'line-rate {line_rate} is acceptable.')
+                EOF
