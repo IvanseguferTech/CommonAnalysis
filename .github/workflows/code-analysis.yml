@@ -1,0 +1,52 @@
+name: Code Analysis
+
+on:
+    workflow_call:
+        inputs:
+            project_key:
+                type: string
+                required: true
+            organization_key:
+                type: string
+                required: true
+        secrets:
+            sonar_token:
+                description: "SonarCloud Token"
+                required: true
+
+env:
+    DOTNET_VERSION: "10.0.x"
+    buildConfiguration: Release
+
+jobs:
+    code-analysis:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v6
+          with:
+            fetch-depth: 0
+        
+        - name: Set up JDK 17
+          uses: actions/setup-java@v5
+          with:
+            java-version: 17
+            distribution: zulu
+
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v5
+          with:
+            dotnet-version: ${{ env.DOTNET_VERSION }}
+
+        - name: Install SonarQube scanner
+          run: dotnet tool install -g dotnet-sonarscanner
+
+        - name: Build and analyze
+          run: |
+            dotnet sonarscanner begin \
+              /k:"${{ inputs.project_key }}" \
+              /o:"${{ inputs.organization_key }}" \
+              /d:sonar.token="${{ secrets.sonar_token }}"
+            dotnet build --configuration=${{ env.buildConfiguration }}
+            dotnet sonarscanner end /d:sonar.token=${{ secrets.sonar_token }}
