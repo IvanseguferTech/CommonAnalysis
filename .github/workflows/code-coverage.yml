@@ -4,10 +4,10 @@ on:
     workflow_call:
         inputs:
             max_limit:
-                type: number
+                type: string
                 required: true
             min_limit:
-                type: number
+                type: string
                 required: true
 
 env:
