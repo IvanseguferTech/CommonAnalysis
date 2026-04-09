@@ -79,9 +79,9 @@ jobs:
                 min_limit = int(os.getenv('min_limit'))
                 max_limit = int(os.getenv('max_limit'))
 
-                check_icon = "✅"
-                dash_icon = "‒"
-                cross_icon = "❌"
+                check_icon = '\u2705'
+                warning_icon = '\u26A0'
+                cross_icon = '\u274C'
                 output_lines = ['# Coverage Table\\n\\n', '| Name | Percentage | |\\n', '| --- | --- | --- |\\n']
 
                 file_path = '${{ env.coveragePath }}/SummaryGithub.md'
@@ -99,7 +99,7 @@ jobs:
                 if coverage_percentage > max_limit:
                     icon = check_icon
                 elif min_limit <= coverage_percentage <= max_limit:
-                    icon = dash_icon
+                    icon = warning_icon
                 else:
                     icon = cross_icon
 
